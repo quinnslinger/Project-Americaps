@@ -1,0 +1,605 @@
+<html>
+<head>
+<title>americaps.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #7a7e85;}
+.s3 { color: #bcbec4;}
+.s4 { color: #6aab73;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+americaps.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">pandas </span><span class="s0">as </span><span class="s1">pd</span>
+
+
+<span class="s2"># Pad naar het CSV-bestand</span>
+<span class="s1">bestandspad </span><span class="s3">= </span><span class="s4">'Kikker.csv'</span>
+
+<span class="s2"># Laad het CSV-bestand in een DataFrame</span>
+<span class="s1">df </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">read_csv</span><span class="s3">(</span><span class="s1">bestandspad</span><span class="s3">)</span>
+
+<span class="s1">df_cleaned </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">copy</span><span class="s3">()</span>
+
+<span class="s2"># Checken op dubbele rijen</span>
+<span class="s2"># Check op exacte duplicaten</span>
+<span class="s1">duplicaten </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">duplicated</span><span class="s3">().</span><span class="s1">sum</span><span class="s3">()</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;Aantal exacte duplicaten: </span><span class="s0">{</span><span class="s1">duplicaten</span><span class="s0">}</span><span class="s4">&quot;</span><span class="s3">)</span>
+
+<span class="s2"># Verwijder duplicaten indien nodig</span>
+<span class="s1">df </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">drop_duplicates</span><span class="s3">()</span>
+
+
+<span class="s2">#PackagingApparaat check</span>
+<span class="s2">#Deze kolom geeft 3 verschillende waardes aan voor missende apparaten namelijk '###', 'NaN' en 'Onbekend Apparaat'</span>
+
+<span class="s2"># Verwijder eventuele voor/achter-spaties en zet alles naar string (voor consistente verwerking)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingApparaat'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingApparaat'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2"># De waardes '###' en 'nan' vervang ik met 'Onbekend apparaat' hierdoor hebben alles missende waardes dezelfde waarde</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingApparaat'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingApparaat'</span><span class="s3">].</span><span class="s1">replace</span><span class="s3">([</span><span class="s4">'###'</span><span class="s3">, </span><span class="s4">'nan'</span><span class="s3">], </span><span class="s4">'Onbekend apparaat'</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅De afwijkende waardes van PackagingApparaat zijn aangepast naar 'Onbekend Apparaat'&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Klantretourpercentage</span>
+<span class="s2">#De percentages zijn als nummer bedoeld, maar worden nu opgeslagen als string omdat er een % teken achterstaat</span>
+<span class="s2">#Ik ga alles aanpassen naar een float</span>
+
+<span class="s2">#het % teken verwijderen en het omzetten naar een float</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Klantretourpercentage'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Klantretourpercentage'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'%'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">).</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">float</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅ Alle %tekens zijn verwijderd&quot;</span><span class="s3">)</span>
+
+<span class="s2">#Registratiedatum</span>
+<span class="s2">#Hier zijn een aantal lege datums te vinden</span>
+<span class="s2">#De registratiedatums kloppen niet met het grindproces</span>
+<span class="s2">#3646 datums zijn na het grindproces en 3655 gevallen ervoor dit kan niet beide zijn</span>
+<span class="s2">#En de datum staat nu in een string, deze word omgezet naar een date-time</span>
+
+<span class="s2"># Zet de kolom 'Registratiedatum' en 'Grindingdatumtijdstart' om naar datetime</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Registratiedatum'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Registratiedatum'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#alle registratie datums omzetten naar voor het grinddatumtijdstart</span>
+<span class="s1">geldige_verschillen</span><span class="s3">=</span><span class="s1">df</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Registratiedatum'</span><span class="s3">] &lt; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">]]</span>
+<span class="s2">#Het gemiddelde tijdsverschil moet berekend tussen registratie en grindproces</span>
+<span class="s1">gemiddeld_verschil</span><span class="s3">=(</span><span class="s1">geldige_verschillen</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">] - </span><span class="s1">geldige_verschillen</span><span class="s3">[</span><span class="s4">'Registratiedatum'</span><span class="s3">]).</span><span class="s1">mean</span><span class="s3">()</span>
+<span class="s2">#het gemiddelde verschil moet van seconden naar jaren</span>
+<span class="s1">verschil_jaren </span><span class="s3">= </span><span class="s1">round</span><span class="s3">(</span><span class="s1">gemiddeld_verschil</span><span class="s3">.</span><span class="s1">total_seconds</span><span class="s3">() / (</span><span class="s5">365 </span><span class="s3">* </span><span class="s5">24 </span><span class="s3">* </span><span class="s5">3600</span><span class="s3">), </span><span class="s5">2</span><span class="s3">)</span>
+<span class="s2"># ✅ Corrigeer foutieve of ontbrekende registratiedatums met een if-statement in een for-loop</span>
+<span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range</span><span class="s3">(</span><span class="s1">len</span><span class="s3">(</span><span class="s1">df</span><span class="s3">)):</span>
+    <span class="s1">registratiedatum </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">at</span><span class="s3">[</span><span class="s1">i</span><span class="s3">, </span><span class="s4">'Registratiedatum'</span><span class="s3">]</span>
+    <span class="s1">grinding_start </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">at</span><span class="s3">[</span><span class="s1">i</span><span class="s3">, </span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">]</span>
+
+    <span class="s2">#  Controleer of de registratiedatum ontbreekt of na de start van het slijpen ligt</span>
+    <span class="s0">if </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">isna</span><span class="s3">(</span><span class="s1">registratiedatum</span><span class="s3">) </span><span class="s0">or </span><span class="s1">registratiedatum </span><span class="s3">&gt; </span><span class="s1">grinding_start</span><span class="s3">:</span>
+        <span class="s2">#  Corrigeer de registratiedatum met het gemiddelde verschil</span>
+        <span class="s1">df</span><span class="s3">.</span><span class="s1">at</span><span class="s3">[</span><span class="s1">i</span><span class="s3">, </span><span class="s4">'Registratiedatum'</span><span class="s3">] = </span><span class="s1">grinding_start </span><span class="s3">- </span><span class="s1">gemiddeld_verschil</span>
+        <span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅Registratiedatum is aangepast&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#FillingDatumTijdStart en Einde</span>
+<span class="s2">#Hier ontbreken ook veel waarde. Deze ga ik invullen door het gemiddelde verschil te berekenen</span>
+<span class="s2">#Daardoor kunnen de lege waardes ook ingevuld worden.</span>
+<span class="s2">#Hier moet de datum ook naar een datetime omgezet worden</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># gemiddeld verschil uitrekenen voor rijen waar Start &amp; Eind aanwezig zijn</span>
+
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDurationHours'</span><span class="s3">] = ((</span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">]) - </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">])).</span><span class="s1">dt</span><span class="s3">.</span><span class="s1">total_seconds</span><span class="s3">() / </span><span class="s5">3600</span><span class="s3">).</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2"># Gemiddelde vultijd in uren</span>
+<span class="s1">gemiddeld_verschil_in_uren </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDurationHours'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2"># missende starttijden worden ingevuld op basis van eindtijd - gemiddelde vultijd</span>
+<span class="s1">missende_start </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missende_start</span><span class="s3">, </span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missende_start</span><span class="s3">, </span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_timedelta</span><span class="s3">(</span><span class="s1">gemiddeld_verschil_in_uren</span><span class="s3">, </span><span class="s1">unit</span><span class="s3">=</span><span class="s4">'h'</span><span class="s3">)</span>
+
+<span class="s2">#missende eindtijden worden ingevuld op basis van starttijd + gemiddelde vultijd</span>
+<span class="s1">missend_einde </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missend_einde</span><span class="s3">, </span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missend_einde</span><span class="s3">, </span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">] + </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_timedelta</span><span class="s3">(</span><span class="s1">gemiddeld_verschil_in_uren</span><span class="s3">, </span><span class="s1">unit</span><span class="s3">=</span><span class="s4">'h'</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅Missende start- en eindtijden zijn toegevoegd&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#PackagingDatumTijdEind</span>
+<span class="s2">#Dit moet ook in datetime format gezet worden</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Gemiddeld verschil berekenen waar start en eind tijden zijn</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDurationHours'</span><span class="s3">] = (</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">]).</span><span class="s1">dt</span><span class="s3">.</span><span class="s1">total_seconds</span><span class="s3">() / </span><span class="s5">3600</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDurationHours'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDurationHours'</span><span class="s3">].</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+<span class="s1">gemiddeld_verschil_uren_packaging </span><span class="s3">= </span><span class="s1">round</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDurationHours'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">(), </span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2">#missende starttijden invullen</span>
+<span class="s1">missende_start_packaging </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missende_start_packaging</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missende_start_packaging</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_timedelta</span><span class="s3">(</span><span class="s1">gemiddeld_verschil_uren_packaging</span><span class="s3">, </span><span class="s1">unit</span><span class="s3">=</span><span class="s4">'h'</span><span class="s3">)</span>
+
+<span class="s2">#missende eindtijden invullen</span>
+<span class="s1">missend_einde_packaging </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missend_einde_packaging</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missend_einde_packaging</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">] + </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_timedelta</span><span class="s3">(</span><span class="s1">gemiddeld_verschil_uren_packaging</span><span class="s3">, </span><span class="s1">unit</span><span class="s3">=</span><span class="s4">'h'</span><span class="s3">)</span>
+
+
+<span class="s2">#Cost</span>
+<span class="s2">#euros uit de string verwijderen</span>
+<span class="s2">#kolom omzetten naar float</span>
+<span class="s2">#ongeldige waarden een gemiddelde waarden geven</span>
+
+<span class="s2">#Verwijder tekst zoals 'euros' uit de Cost-kolom</span>
+<span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cost'</span><span class="s3">] = </span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cost'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'euros'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Zet om naar numeriek (float), zet fouten om naar NaN</span>
+<span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cost'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cost'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># Definieer foutieve Cost-waarden</span>
+<span class="s1">criteria_cost </span><span class="s3">= </span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cost'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() | (</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cost'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) | (</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cost'</span><span class="s3">] &gt; </span><span class="s5">10000</span><span class="s3">)</span>
+
+<span class="s2"># Bereken het gemiddelde van de geldige Cost-waarden</span>
+<span class="s1">gem_cost </span><span class="s3">= </span><span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">criteria_cost</span><span class="s3">, </span><span class="s4">'Cost'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2"># Vervang foutieve Cost-waarden met het gemiddelde</span>
+<span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">criteria_cost</span><span class="s3">, </span><span class="s4">'Cost'</span><span class="s3">] = </span><span class="s1">gem_cost</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅Alle foutieve data is in het gemiddelde verandert&quot;</span><span class="s3">)</span>
+
+
+
+<span class="s2">#Voorraadniveaus</span>
+<span class="s2">#Verwijder 'units' uit de kolom (indien aanwezig)</span>
+<span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">] = </span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'units'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Zet om naar numeriek</span>
+<span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Definieer foutieve rijen</span>
+<span class="s1">criteria_voorraad </span><span class="s3">= (</span>
+    <span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |</span>
+    <span class="s3">(</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |</span>
+    <span class="s3">(</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">] &gt; </span><span class="s5">100000</span><span class="s3">))</span>
+
+<span class="s2">#Bereken gemiddelde van geldige voorraadwaarden</span>
+<span class="s1">gem_voorraad </span><span class="s3">= </span><span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">criteria_voorraad</span><span class="s3">, </span><span class="s4">'Voorraadniveaus'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">()</span>
+
+<span class="s2">#Vervang foutieve waarden met het gemiddelde</span>
+<span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">criteria_voorraad</span><span class="s3">, </span><span class="s4">'Voorraadniveaus'</span><span class="s3">] = </span><span class="s1">gem_voorraad</span>
+
+<span class="s2">#Zet naar int</span>
+<span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">] = </span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Voorraadniveaus'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">int</span><span class="s3">)</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅Ongeldige voorraden zijn omgezet naar het gemiddelde&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#FillingDatumTijdstart en einde</span>
+<span class="s2">#Kolommen naar datetime omzetten</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#gemiddelde vultijd op basis van geldige rijen</span>
+<span class="s1">geldige_rijen_filling </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()]</span>
+<span class="s1">gemiddelde_vultijd </span><span class="s3">= (</span><span class="s1">geldige_rijen_filling</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">geldige_rijen_filling</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">]).</span><span class="s1">mean</span><span class="s3">()</span>
+
+<span class="s2"># Vul ontbrekende starttijden aan (indien eindtijd aanwezig is)</span>
+<span class="s1">start_filling</span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">start_filling</span><span class="s3">, </span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">start_filling</span><span class="s3">, </span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">gemiddelde_vultijd</span>
+
+<span class="s2"># Vul ontbrekende eindtijden aan (indien starttijd aanwezig is)</span>
+<span class="s1">eind_filling </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">eind_filling</span><span class="s3">, </span><span class="s4">'FillingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">eind_filling</span><span class="s3">, </span><span class="s4">'FillingDatumTijdStart'</span><span class="s3">] + </span><span class="s1">gemiddelde_vultijd</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅De ontbrekende tijden zijn ingevuld&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Benuttingsgraad</span>
+<span class="s2"># verwijderen % teken</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Benuttingsgraad'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Benuttingsgraad'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'%'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2"># omzetten naar numeriek (float)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Benuttingsgraad'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Benuttingsgraad'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅Het % teken is succesvol omgezet naar een float&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#GrindingDatumTijdStart en einde</span>
+<span class="s2">#  beide grindingkolommen datetime maken</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># Bereken de gemiddelde maalduur</span>
+<span class="s1">geldige_maaltijden </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()]</span>
+<span class="s1">gemiddelde_maalduur </span><span class="s3">= (</span><span class="s1">geldige_maaltijden</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">geldige_maaltijden</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">]).</span><span class="s1">mean</span><span class="s3">()</span>
+
+<span class="s2"># Vul ontbrekende starttijden aan (indien eindtijd aanwezig is)</span>
+<span class="s1">start_grinding </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">start_grinding</span><span class="s3">, </span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">start_grinding</span><span class="s3">, </span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">gemiddelde_maalduur</span>
+
+<span class="s2"># Vul ontbrekende eindtijden aan (indien starttijd aanwezig is)</span>
+<span class="s1">eind_grinding </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">eind_grinding</span><span class="s3">, </span><span class="s4">'GrindingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">eind_grinding</span><span class="s3">, </span><span class="s4">'GrindingDatumTijdStart'</span><span class="s3">] + </span><span class="s1">gemiddelde_maalduur</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ De ontbrekende grinding-start en -eindtijden zijn ingevuld.&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Cyclustijd</span>
+<span class="s2">#Verwijder 'uur' uit de kolom (indien aanwezig)</span>
+<span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cyclustijd'</span><span class="s3">] = </span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cyclustijd'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'uur'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Zet om naar float</span>
+<span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cyclustijd'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cyclustijd'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Markeer foutieve waarden (NaN of &lt; 0)</span>
+<span class="s1">criteria_cyclustijd </span><span class="s3">= </span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cyclustijd'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() | (</span><span class="s1">df_cleaned</span><span class="s3">[</span><span class="s4">'Cyclustijd'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">)</span>
+
+<span class="s2">#Bereken gemiddelde cyclustijd</span>
+<span class="s1">gem_cyclustijd </span><span class="s3">= </span><span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">criteria_cyclustijd</span><span class="s3">, </span><span class="s4">'Cyclustijd'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2">#Vervang foutieve waarden met het gemiddelde</span>
+<span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">criteria_cyclustijd</span><span class="s3">, </span><span class="s4">'Cyclustijd'</span><span class="s3">] = </span><span class="s1">gem_cyclustijd</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅De gemiddeld cyclustijd is succesvol toegevoegd aan rijen met een foute waarde&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#LeverancierLevertijd</span>
+<span class="s2">#Verwijder het woord dagen</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'LeverancierLevertijd'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'LeverancierLevertijd'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'dagen'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2"># zet om naar int</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'LeverancierLevertijd'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'LeverancierLevertijd'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Bereken het gemiddelde van de geldige waarden</span>
+<span class="s1">gemiddelde_levertijd </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'LeverancierLevertijd'</span><span class="s3">].</span><span class="s1">dropna</span><span class="s3">().</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">()</span>
+
+<span class="s2">#Vervang NaN door het gemiddelde en zet om naar int</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'LeverancierLevertijd'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'LeverancierLevertijd'</span><span class="s3">].</span><span class="s1">fillna</span><span class="s3">(</span><span class="s1">gemiddelde_levertijd</span><span class="s3">).</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">int</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅De gemiddelde leveranciertijd is toegevoegd aan de rijen met een foutieve waarde&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Leveranciersbeoordeling</span>
+<span class="s2">#omzetten naar numeriek</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#ongeldige waarden duidelijk maken</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'OngeldigeBeoordeling'</span><span class="s3">] = ( </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">] &gt; </span><span class="s5">10.1</span><span class="s3">))</span>
+
+<span class="s2"># Vervang ongeldige waarde met tekst foute beoordeling</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'OngeldigeBeoordeling'</span><span class="s3">], </span><span class="s4">'Leveranciersbeoordeling'</span><span class="s3">] = </span><span class="s4">'foute beoordeling'</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅Foute beoordelingen en lege waarden zijn aangepast&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Klanttevredenheid</span>
+<span class="s2">#Kolom omzetten naar float. Deze code maakt automatisch NaN van niet numerieke waarden</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Klanttevredenheid'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Klanttevredenheid'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># Foute klanttevredenheidsscores markeren</span>
+<span class="s1">Ongeldige_klanttevredenheid</span><span class="s3">= (  </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Klanttevredenheid'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |   (</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Klanttevredenheid'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) | (</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Klanttevredenheid'</span><span class="s3">] &gt; </span><span class="s5">10</span><span class="s3">))</span>
+
+<span class="s2"># Zet kolom naar een string zodat ik tekst kan invoegen</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Klanttevredenheid'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Klanttevredenheid'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+
+<span class="s2"># de ongeldige waarden worden vervangen met de gewenste tekst</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'OngeldigeKlanttevredenheid'</span><span class="s3">], </span><span class="s4">'Klanttevredenheid'</span><span class="s3">] = </span><span class="s4">'Ongeldige klanttevredenheid'</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅De lege waarden zijn aangepast naer Ongeldige klanttevredenheid&quot;</span><span class="s3">)</span>
+
+
+<span class="s2"># Gewichtscontrole</span>
+
+<span class="s2"># Verwijder 'kg' uit de string</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'kg'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Zet de kolom om naar float</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Bepaal ongeldige gewichten (&lt; 0, &gt; 10, of NaN)</span>
+<span class="s1">ongeldig_gewicht </span><span class="s3">= (</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">] &gt; </span><span class="s5">10</span><span class="s3">))</span>
+
+<span class="s2"># Bereken gemiddelde van geldige waarden</span>
+<span class="s1">gemiddelde_gewicht </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">ongeldig_gewicht</span><span class="s3">, </span><span class="s4">'Gewichtscontrole'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">()</span>
+<span class="s1">gemiddelde_gewicht_afgerond </span><span class="s3">= </span><span class="s1">round</span><span class="s3">(</span><span class="s1">gemiddelde_gewicht</span><span class="s3">, </span><span class="s5">2</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅ Het gemiddelde gewicht is </span><span class="s0">{</span><span class="s1">gemiddelde_gewicht_afgerond</span><span class="s0">} </span><span class="s4">kg&quot;</span><span class="s3">)</span>
+
+<span class="s2"># Stap 5: Vervang ongeldige waarden door het gemiddelde</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">ongeldig_gewicht</span><span class="s3">, </span><span class="s4">'Gewichtscontrole'</span><span class="s3">] = </span><span class="s1">gemiddelde_gewicht_afgerond</span>
+
+<span class="s2"># Stap 6: Zet kolom weer om naar string en voeg ' kg' toe</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Gewichtscontrole'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">) + </span><span class="s4">&quot; kg&quot;</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ De ongeldige gewichten in de kolom 'Gewichtscontrole' zijn aangepast naar het gemiddelde gewicht.&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#FillingID</span>
+<span class="s2">#FillingID omzetten naar numeriek</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingID'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingID'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">).</span><span class="s1">astype</span><span class="s3">(</span><span class="s4">'Int64'</span><span class="s3">)</span>
+
+<span class="s2">#Detecteer duplicaten</span>
+<span class="s1">duplicaten </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">duplicated</span><span class="s3">(</span><span class="s1">subset</span><span class="s3">=</span><span class="s4">'FillingID'</span><span class="s3">, </span><span class="s1">keep</span><span class="s3">=</span><span class="s4">'first'</span><span class="s3">).</span><span class="s1">sum</span><span class="s3">()</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot; Aantal dubbele FillingID's vóór vervanging: {duplicaten}&quot;</span><span class="s3">)</span>
+
+<span class="s2"># Vervang volledige kolom door unieke ID's van 1 t/m 8000</span>
+<span class="s1">totaal_rijen </span><span class="s3">= </span><span class="s1">len</span><span class="s3">(</span><span class="s1">df</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'FillingID'</span><span class="s3">] = </span><span class="s1">list</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">1</span><span class="s3">,</span><span class="s1">totaal_rijen</span><span class="s3">+</span><span class="s5">1</span><span class="s3">))</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ Nieuwe unieke FillingID's toegewezen.&quot;</span><span class="s3">)</span>
+
+
+<span class="s2"># DuurzaamheidScore</span>
+
+<span class="s2"># Zorgen dat alles string is en onnodige tekens verwijderen</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">) </span><span class="s1">\</span>
+    <span class="s3">.</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'%'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">) </span><span class="s1">\</span>
+    <span class="s3">.</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'punten'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">) </span><span class="s1">\</span>
+    <span class="s3">.</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2"># Zet om naar numeriek</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># Markeer foutieve waarden: &lt; 0, &gt; 101, of NaN</span>
+<span class="s1">ongeldige_duurzaamheidsscore </span><span class="s3">= ((</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) | (</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">] &gt; </span><span class="s5">101</span><span class="s3">) | (</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">()))</span>
+
+<span class="s2"># Zet kolom tijdelijk naar string om tekst toe te kunnen voegen</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Duurzaamheid Score'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+
+<span class="s2"># Vervang foutieve waarden met de melding</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">ongeldige_duurzaamheidsscore</span><span class="s3">, </span><span class="s4">'Duurzaamheid Score'</span><span class="s3">] = </span><span class="s4">'Ongeldige Duurzaamheidsscore'</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ De foute scores zijn aangepast naar 'Ongeldige Duurzaamheidsscore'&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#PackagingDatumTijd Start en einde</span>
+<span class="s2"># In datetime format zetten</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># Bereken verschil in uren waar beide datums bekend zijn</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDurationHours'</span><span class="s3">] = (</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">]).</span><span class="s1">dt</span><span class="s3">.</span><span class="s1">total_seconds</span><span class="s3">() / </span><span class="s5">3600</span>
+
+<span class="s2"># Gemiddelde berekenen en afronden</span>
+<span class="s1">gemiddelde_inpaktijd_uren</span><span class="s3">= </span><span class="s1">round</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDurationHours'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">(), </span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅ Gemiddelde verpakkingsduur: </span><span class="s0">{</span><span class="s1">gemiddelde_inpaktijd_uren</span><span class="s0">} </span><span class="s4">uur&quot;</span><span class="s3">)</span>
+
+<span class="s2"># Vul ontbrekende starttijd aan op basis van eindtijd</span>
+<span class="s1">missende_start_packagingdatum </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missende_start_packagingdatum</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missende_start_packagingdatum</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] - </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_timedelta</span><span class="s3">(</span><span class="s1">gemiddelde_inpaktijd_uren</span><span class="s3">, </span><span class="s1">unit</span><span class="s3">=</span><span class="s4">'h'</span><span class="s3">)</span>
+
+<span class="s2">#Vul ontbrekende eindtijd aan op basis van starttijd</span>
+<span class="s1">missend_einde_packagingdatum </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() &amp; </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">].</span><span class="s1">notna</span><span class="s3">()</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missend_einde_packagingdatum</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdEind'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">missend_einde_packagingdatum</span><span class="s3">, </span><span class="s4">'PackagingDatumTijdStart'</span><span class="s3">] + </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_timedelta</span><span class="s3">(</span><span class="s1">gemiddelde_inpaktijd_uren</span><span class="s3">, </span><span class="s1">unit</span><span class="s3">=</span><span class="s4">'h'</span><span class="s3">)</span>
+
+
+<span class="s2">#Batchnr</span>
+<span class="s2"># Zet alles om naar string</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+
+<span class="s2"># Bepaal ongeldige Batchnrs (duplicaten, 'XXXX', of beginnend met '-')</span>
+<span class="s1">ongeldige_ids_batchnr </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s1">df</span><span class="s3">.</span><span class="s1">duplicated</span><span class="s3">(</span><span class="s4">'Batchnr'</span><span class="s3">, </span><span class="s1">keep</span><span class="s3">=</span><span class="s0">False</span><span class="s3">) |</span>
+       <span class="s1">df</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">].</span><span class="s1">isin</span><span class="s3">([</span><span class="s4">'XXXX'</span><span class="s3">]) |</span>
+       <span class="s1">df</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">startswith</span><span class="s3">(</span><span class="s4">'-'</span><span class="s3">)][</span><span class="s4">'Batchnr'</span><span class="s3">])</span>
+
+<span class="s2"># Zoek bestaande geldige IDs en wat er nog beschikbaar is</span>
+<span class="s1">bestaande_ids_batchnr </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">]) - </span><span class="s1">ongeldige_ids_batchnr</span>
+<span class="s1">beschikbare_ids_batchnr </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span><span class="s1">map</span><span class="s3">(</span><span class="s1">str</span><span class="s3">, </span><span class="s1">range</span><span class="s3">(</span><span class="s5">1</span><span class="s3">, </span><span class="s5">8002</span><span class="s3">))) - </span><span class="s1">bestaande_ids_batchnr</span>
+
+<span class="s2"># Vervang alleen ongeldige IDs met beschikbare unieke waarden</span>
+<span class="s1">batchnr_iterator </span><span class="s3">= </span><span class="s1">iter</span><span class="s3">(</span><span class="s1">sorted</span><span class="s3">(</span><span class="s1">beschikbare_ids_batchnr</span><span class="s3">))</span>
+<span class="s0">for </span><span class="s1">index</span><span class="s3">, </span><span class="s1">row </span><span class="s0">in </span><span class="s1">df</span><span class="s3">.</span><span class="s1">iterrows</span><span class="s3">():</span>
+    <span class="s0">if </span><span class="s1">row</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">] </span><span class="s0">in </span><span class="s1">ongeldige_ids_batchnr</span><span class="s3">:</span>
+        <span class="s1">df</span><span class="s3">.</span><span class="s1">at</span><span class="s3">[</span><span class="s1">index</span><span class="s3">, </span><span class="s4">'Batchnr'</span><span class="s3">] = </span><span class="s1">next</span><span class="s3">(</span><span class="s1">batchnr_iterator</span><span class="s3">)</span>
+
+<span class="s2"># Zet kolom terug naar integer</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Batchnr'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">int</span><span class="s3">)</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ Batchnr opgeschoond:&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#CO2-Footprint</span>
+<span class="s2">#zet alles naar string en verwijder eenheden</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'kg CO2/kg'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#zet lege string om naar NaN</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">] == </span><span class="s4">&quot;&quot;</span><span class="s3">, </span><span class="s4">'CO2-Footprint'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">NA</span>
+
+<span class="s2">#zet de overige waardes naar nummers</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Nu de ongeldige waardes definiëren foutieve waarden zijn &lt; 0, &gt; 100 of NaN</span>
+<span class="s1">ongeldige_co2 </span><span class="s3">= (</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'CO2-Footprint'</span><span class="s3">] &gt; </span><span class="s5">100</span><span class="s3">))</span>
+
+<span class="s2"># Bereken het gemiddelde van geldige waarden</span>
+<span class="s1">gemiddelde_co2 </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">ongeldige_co2</span><span class="s3">, </span><span class="s4">'CO2-Footprint'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2"># Vervang foutieve waarden met het gemiddelde</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">ongeldige_co2</span><span class="s3">, </span><span class="s4">'CO2-Footprint'</span><span class="s3">] = </span><span class="s1">gemiddelde_co2</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅ Foutieve waarden vervangen met het gemiddelde: </span><span class="s0">{</span><span class="s1">gemiddelde_co2</span><span class="s0">} </span><span class="s4">kg CO2/kg&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#ProcessTime</span>
+<span class="s2">#Alles naar string en verwijder 'hours'</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'hours'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Zet lege strings om naar NaN</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">] == </span><span class="s4">&quot;&quot;</span><span class="s3">, </span><span class="s4">'ProcessTime'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">NA</span>
+
+<span class="s2">#Zet alles om naar numeriek, foutieve waarden worden NaN</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Definieer foutieve waarden: &lt; 0, &gt; 24 of NaN</span>
+<span class="s1">ongeldige_processtijd </span><span class="s3">= (</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'ProcessTime'</span><span class="s3">] &gt; </span><span class="s5">24</span><span class="s3">))</span>
+
+<span class="s2">#Bereken gemiddelde van geldige waarden</span>
+<span class="s1">gemiddelde_processtijd </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">ongeldige_processtijd</span><span class="s3">, </span><span class="s4">'ProcessTime'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2">#Vervang foutieve waarden met het gemiddelde</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">ongeldige_processtijd</span><span class="s3">, </span><span class="s4">'ProcessTime'</span><span class="s3">] = </span><span class="s1">gemiddelde_processtijd</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅ Ongeldige waardes zijn nu vervangen door de gemiddelde tijd&quot;</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;Gemiddelde gebruikt: </span><span class="s0">{</span><span class="s1">gemiddelde_processtijd</span><span class="s0">} </span><span class="s4">uur&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Fair-Trade Score</span>
+<span class="s2"># Zet alles naar string</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Zet lege strings om naar NaN</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">] == </span><span class="s4">&quot;&quot;</span><span class="s3">, </span><span class="s4">'Fair-Trade Score'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">NA</span>
+
+<span class="s2">#Zet kolom om naar numeriek (float)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Definieer foutieve waarden: &lt; 0, &gt; 100 of NaN</span>
+<span class="s1">ongeldige_fairtrade </span><span class="s3">= (</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Fair-Trade Score'</span><span class="s3">] &gt; </span><span class="s5">100</span><span class="s3">))</span>
+
+<span class="s2">#Bereken gemiddelde van geldige waarden</span>
+<span class="s1">gemiddelde_fairtrade </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">ongeldige_fairtrade</span><span class="s3">, </span><span class="s4">'Fair-Trade Score'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2">#Vervang foutieve waarden met het gemiddelde</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">ongeldige_fairtrade</span><span class="s3">, </span><span class="s4">'Fair-Trade Score'</span><span class="s3">] = </span><span class="s1">gemiddelde_fairtrade</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅Ongeldige Fair-trade waardes zijn aangepast naar het gemiddelde&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Defectpercentage</span>
+<span class="s2">#Verwijder '%'</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">'%'</span><span class="s3">, </span><span class="s4">''</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Zet lege strings om naar NaN</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">] == </span><span class="s4">''</span><span class="s3">, </span><span class="s4">'Defectpercentage'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">NA</span>
+
+<span class="s2">#Zet om naar numeriek (float)</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># Stap 4: Definieer foutieve waarden</span>
+<span class="s1">ongeldige_defectpercentage </span><span class="s3">= (</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Defectpercentage'</span><span class="s3">] &gt; </span><span class="s5">100</span><span class="s3">)</span>
+<span class="s3">)</span>
+
+<span class="s2">#Controle hoeveel foutief</span>
+<span class="s1">aantal_ongeldige_defectpercentage </span><span class="s3">= </span><span class="s1">ongeldige_defectpercentage</span><span class="s3">.</span><span class="s1">sum</span><span class="s3">()</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;🔍 Aantal foutieve of ontbrekende waarden: </span><span class="s0">{</span><span class="s1">aantal_ongeldige_defectpercentage</span><span class="s0">}</span><span class="s4">&quot;</span><span class="s3">)</span>
+
+<span class="s2">#Indien nodig → vervang met gemiddelde</span>
+<span class="s0">if </span><span class="s1">aantal_ongeldige_defectpercentage </span><span class="s3">&gt; </span><span class="s5">0</span><span class="s3">:</span>
+    <span class="s1">gemiddelde_defectpercentage </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">ongeldige_defectpercentage</span><span class="s3">, </span><span class="s4">'Defectpercentage'</span><span class="s3">].</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+    <span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">ongeldige_defectpercentage</span><span class="s3">, </span><span class="s4">'Defectpercentage'</span><span class="s3">] = </span><span class="s1">gemiddelde_defectpercentage</span>
+    <span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅ Foutieve waarden vervangen met gemiddelde: </span><span class="s0">{</span><span class="s1">gemiddelde_defectpercentage</span><span class="s0">}</span><span class="s4">%&quot;</span><span class="s3">)</span>
+<span class="s0">else</span><span class="s3">:</span>
+    <span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ Geen foutieve waarden gevonden. Kolom is al schoon.&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#Energieverbruik</span>
+<span class="s2">#Strip &quot;kWh&quot;</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">replace</span><span class="s3">(</span><span class="s4">&quot;kWh&quot;</span><span class="s3">, </span><span class="s4">&quot;&quot;</span><span class="s3">, </span><span class="s1">regex</span><span class="s3">=</span><span class="s0">False</span><span class="s3">).</span><span class="s1">str</span><span class="s3">.</span><span class="s1">strip</span><span class="s3">()</span>
+
+<span class="s2">#Vervang bekende foutwaarden met NaN</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">].</span><span class="s1">replace</span><span class="s3">([</span><span class="s4">&quot;&quot;</span><span class="s3">, </span><span class="s4">&quot;onbekend&quot;</span><span class="s3">, </span><span class="s4">&quot;nan&quot;</span><span class="s3">], </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">NA</span><span class="s3">)</span>
+
+<span class="s2">#Zet om naar float</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_numeric</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2">#Markeer ongeldige waarden</span>
+<span class="s1">ongeldige_energie </span><span class="s3">= (</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">() |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">] &lt; </span><span class="s5">0</span><span class="s3">) |</span>
+    <span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Energieverbruik'</span><span class="s3">] &gt; </span><span class="s5">10000</span><span class="s3">)</span>
+<span class="s3">)</span>
+
+<span class="s2">#Bereken gemiddelde van geldige waarden</span>
+<span class="s1">geldige_energie </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[~</span><span class="s1">ongeldige_energie</span><span class="s3">, </span><span class="s4">'Energieverbruik'</span><span class="s3">]</span>
+<span class="s1">gemiddelde_energie </span><span class="s3">= </span><span class="s1">geldige_energie</span><span class="s3">.</span><span class="s1">mean</span><span class="s3">().</span><span class="s1">round</span><span class="s3">(</span><span class="s5">2</span><span class="s3">)</span>
+
+<span class="s2"># Stap 6: Vervang foutieve waarden</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">ongeldige_energie</span><span class="s3">, </span><span class="s4">'Energieverbruik'</span><span class="s3">] = </span><span class="s1">gemiddelde_energie</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;✅ Ongeldige waarden vervangen met gemiddelde: </span><span class="s0">{</span><span class="s1">gemiddelde_energie</span><span class="s0">} </span><span class="s4">kWh&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#PackagingID</span>
+<span class="s2">#Zet alles om naar string</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+
+<span class="s2">#Bepaal ongeldige IDs (duplicaten, 'XXXX', of beginnend met '-')</span>
+<span class="s1">ongeldige_ids_packaging </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s1">df</span><span class="s3">.</span><span class="s1">duplicated</span><span class="s3">(</span><span class="s4">'PackagingID'</span><span class="s3">, </span><span class="s1">keep</span><span class="s3">=</span><span class="s0">False</span><span class="s3">) |</span>
+       <span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">].</span><span class="s1">isin</span><span class="s3">([</span><span class="s4">'XXXX'</span><span class="s3">]) |</span>
+       <span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">startswith</span><span class="s3">(</span><span class="s4">'-'</span><span class="s3">)][</span><span class="s4">'PackagingID'</span><span class="s3">])</span>
+
+<span class="s2">#Zoek bestaande geldige IDs en wat er nog beschikbaar is</span>
+<span class="s1">bestaande_ids_packaging </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">]) - </span><span class="s1">ongeldige_ids_packaging</span>
+<span class="s1">beschikbare_ids_packaging </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span><span class="s1">map</span><span class="s3">(</span><span class="s1">str</span><span class="s3">, </span><span class="s1">range</span><span class="s3">(</span><span class="s5">1</span><span class="s3">, </span><span class="s5">8002</span><span class="s3">))) - </span><span class="s1">bestaande_ids_packaging</span>
+
+<span class="s2">#Vervang alleen ongeldige IDs met beschikbare unieke waarden</span>
+<span class="s1">packaging_iterator </span><span class="s3">= </span><span class="s1">iter</span><span class="s3">(</span><span class="s1">sorted</span><span class="s3">(</span><span class="s1">beschikbare_ids_packaging</span><span class="s3">))</span>
+<span class="s0">for </span><span class="s1">index</span><span class="s3">, </span><span class="s1">row </span><span class="s0">in </span><span class="s1">df</span><span class="s3">.</span><span class="s1">iterrows</span><span class="s3">():</span>
+    <span class="s0">if </span><span class="s1">row</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">] </span><span class="s0">in </span><span class="s1">ongeldige_ids_packaging</span><span class="s3">:</span>
+        <span class="s1">df</span><span class="s3">.</span><span class="s1">at</span><span class="s3">[</span><span class="s1">index</span><span class="s3">, </span><span class="s4">'PackagingID'</span><span class="s3">] = </span><span class="s1">next</span><span class="s3">(</span><span class="s1">packaging_iterator</span><span class="s3">)</span>
+
+<span class="s2">#Zet kolom terug naar integer</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'PackagingID'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">int</span><span class="s3">)</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ PackagingID opgeschoond:&quot;</span><span class="s3">)</span>
+
+<span class="s2">#Laatste audit</span>
+<span class="s2"># Zet de kolom om naar datetime</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Laatste Audit'</span><span class="s3">] = </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">to_datetime</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Laatste Audit'</span><span class="s3">], </span><span class="s1">errors</span><span class="s3">=</span><span class="s4">'coerce'</span><span class="s3">)</span>
+
+<span class="s2"># Vul NaN met 'geen audit'</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Laatste Audit'</span><span class="s3">].</span><span class="s1">isna</span><span class="s3">(), </span><span class="s4">'Laatste Audit'</span><span class="s3">] = </span><span class="s4">'geen audit'</span>
+
+<span class="s2">#Zet alles naar strings</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Laatste Audit'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Laatste Audit'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ Alle lege datums zijn vervangen.&quot;</span><span class="s3">)</span>
+
+
+<span class="s2">#GrindingID</span>
+<span class="s2">#Zet alles om naar string zodat ik 'XXXX' en negatieve waarden kan herkennen</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+
+<span class="s2">#Bepaal ongeldige GrindingIDs (duplicaten, 'XXXX', of beginnend met '-')</span>
+<span class="s1">ongeldige_ids_grindingID </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span>
+    <span class="s1">df</span><span class="s3">[</span><span class="s1">df</span><span class="s3">.</span><span class="s1">duplicated</span><span class="s3">(</span><span class="s4">'GrindingID'</span><span class="s3">, </span><span class="s1">keep</span><span class="s3">=</span><span class="s0">False</span><span class="s3">) |</span>
+       <span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">].</span><span class="s1">isin</span><span class="s3">([</span><span class="s4">'XXXX'</span><span class="s3">]) |</span>
+       <span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">startswith</span><span class="s3">(</span><span class="s4">'-'</span><span class="s3">)][</span><span class="s4">'GrindingID'</span><span class="s3">])</span>
+
+<span class="s2">#Zoek bestaande geldige IDs en wat er nog beschikbaar is</span>
+<span class="s1">bestaande_ids_grindingID </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">]) - </span><span class="s1">ongeldige_ids_grindingID</span>
+<span class="s1">beschikbare_ids_grindingID </span><span class="s3">= </span><span class="s1">set</span><span class="s3">(</span><span class="s1">map</span><span class="s3">(</span><span class="s1">str</span><span class="s3">, </span><span class="s1">range</span><span class="s3">(</span><span class="s5">1</span><span class="s3">, </span><span class="s5">8002</span><span class="s3">))) - </span><span class="s1">bestaande_ids_grindingID</span>
+
+<span class="s2">#Vervang alleen de ongeldige IDs met beschikbare unieke waarden</span>
+<span class="s1">id_iterator </span><span class="s3">= </span><span class="s1">iter</span><span class="s3">(</span><span class="s1">sorted</span><span class="s3">(</span><span class="s1">beschikbare_ids_grindingID</span><span class="s3">))</span>
+<span class="s0">for </span><span class="s1">index</span><span class="s3">, </span><span class="s1">row </span><span class="s0">in </span><span class="s1">df</span><span class="s3">.</span><span class="s1">iterrows</span><span class="s3">():</span>
+    <span class="s0">if </span><span class="s1">row</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">] </span><span class="s0">in </span><span class="s1">ongeldige_ids_grindingID</span><span class="s3">:</span>
+        <span class="s1">df</span><span class="s3">.</span><span class="s1">at</span><span class="s3">[</span><span class="s1">index</span><span class="s3">, </span><span class="s4">'GrindingID'</span><span class="s3">] = </span><span class="s1">next</span><span class="s3">(</span><span class="s1">id_iterator</span><span class="s3">)</span>
+
+<span class="s2">#Zet terug naar integer</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'GrindingID'</span><span class="s3">].</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">int</span><span class="s3">)</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ Ongeldige GrindingID's zijn vervangen met unieke, geldige waarden.&quot;</span><span class="s3">)</span>
+
+<span class="s2">#opslaan als csv</span>
+<span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">to_csv</span><span class="s3">(</span><span class="s4">'Kikker.opgeschoond.csv'</span><span class="s3">, </span><span class="s1">index</span><span class="s3">=</span><span class="s0">False</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ Het opgeschoonde bestand is opgeslagen als 'Kikker.opgeschoond.csv'&quot;</span><span class="s3">)</span>
+
+<span class="s2"># Opslaan als Excel</span>
+<span class="s1">df_cleaned</span><span class="s3">.</span><span class="s1">to_excel</span><span class="s3">(</span><span class="s4">'Kikker.opgeschoond.xlsx'</span><span class="s3">, </span><span class="s1">index</span><span class="s3">=</span><span class="s0">False</span><span class="s3">)</span>
+
+<span class="s1">print</span><span class="s3">(</span><span class="s4">&quot;✅ Bestand is opgeslagen als 'Kikker.opgeschoond.csv' en 'Kikker.opgeschoond.xlsx'&quot;</span><span class="s3">)</span></pre>
+</body>
+</html>
